@@ -21,6 +21,10 @@ from ambari_commons.os_check import OSCheck
 from resource_management.libraries.resources.repository import Repository
 from resource_management.core.logger import Logger
 import ambari_simplejson as json # simplejson is much faster comparing to Python 2.6 json module and has the same functions set.
+import platform
+
+def _is_powerpc():
+  return platform.processor() == 'powerpc' or platform.machine().startswith('ppc')
 
 # components_lits = repoName + postfix
 _UBUNTU_REPO_COMPONENTS_POSTFIX = ["main"]
@@ -45,6 +49,18 @@ def _alter_repo(action, repo_string, repo_template):
       repo['baseUrl'] = None
     if not 'mirrorsList' in repo:
       repo['mirrorsList'] = None
+    # TODO : CUSTOM CODE
+    # hybrid (ppc) code goes here
+    # need to edit the repo file if os arch is ppc
+    Logger.info("Check if ppc and rhel7")
+    if _is_powerpc() and OSCheck.is_redhat_family():
+      if repo['repoName'] == "HDP":
+        repo['baseUrl'] = repo['baseUrl'].replace('centos7','centos7-ppc')
+        Logger.info("changed hdp url to {0}".format(str(repo['baseUrl'])))
+      if repo['repoName'] == "HDP-UTILS":
+        repo['baseUrl'] = repo['baseUrl'].replace('centos7', 'ppc64le')
+        Logger.info("changed hdputils url to {0}".format(str(repo['baseUrl'])))
+    # hybrid (ppc) code ends here
     
     ubuntu_components = [ repo['repoName'] ] + _UBUNTU_REPO_COMPONENTS_POSTFIX
     

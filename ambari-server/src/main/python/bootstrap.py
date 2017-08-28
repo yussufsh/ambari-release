@@ -544,6 +544,32 @@ class BootstrapDefault(Bootstrap):
       scp = SCP(params.user, params.sshPort, params.sshkey_file, self.host, fileToCopy,
                 target, params.bootdir, self.host_log)
       retcode1 = scp.run()
+
+      # TODO : CUSTOM CODE
+      # hybrid (ppc) code goes here
+      # need to edit the repo file if os arch is ppc
+      command_ppc = "{0} uname -m".format(AMBARI_SUDO)
+      ssh = SSH(params.user, params.sshPort, params.sshkey_file, self.host, command_ppc,
+                params.bootdir, self.host_log)
+      retcode1 = ssh.run()
+      ret_value = retcode1['log']
+
+      if ret_value.startswith("ppc"):
+        self.host_log.write(".Found os arch as ppc.")
+
+        if params.cluster_os_type == "redhat7":
+          self.host_log.write(".Found os family as rhel.")
+
+          command_url = "{0} sed -i 's/centos7/centos7-ppc/g' {1}".format(AMBARI_SUDO, target)
+          ssh = SSH(params.user, params.sshPort, params.sshkey_file, self.host, command_url,
+                    params.bootdir, self.host_log)
+          retcode1 = ssh.run()
+        else:
+          self.host.log.write("only redhat with ppc is supported")
+          # TODO: we can block user or let it proceed further
+          #retcode1 = -1
+      # hybrid (ppc) code ends here
+
       self.host_log.write("\n")
 
       # Move file to repo dir
